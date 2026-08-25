@@ -35,6 +35,7 @@ exports.signUpSchema = {
             .max(64, {
             error: "confirmPassword must be at most 64 character long",
         }),
+        phone: zod_1.z.string(),
     })
         .superRefine((data, ctx) => {
         if (data.password !== data.confirmPassword) {

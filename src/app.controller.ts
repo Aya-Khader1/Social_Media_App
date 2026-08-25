@@ -7,7 +7,7 @@ import {
   globalErrorHandler,
   NotFoundException,
 } from "./Utils/response/error.response";
-import { authController, userController } from "./Modules";
+import { authController, userController, postController } from "./Modules";
 import connectDB from "./DB/connection";
 const limiter = rateLimit({
   windowMs: 15 * 40 * 1000,
@@ -27,6 +27,7 @@ export const bootstrap = async (): Promise<void> => {
   });
   app.use("/api/v1/auth", authController);
   app.use("/api/v1/user", userController);
+  app.use("/api/v1/post", postController);
 
   app.use((req: Request, res: Response) => {
     throw new NotFoundException("Route Not Found");

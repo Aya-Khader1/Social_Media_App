@@ -1,5 +1,7 @@
 import { HydratedDocument, Model, Schema, Types, model } from "mongoose";
 import { GenderEnum, RoleEnum } from "../../Utils/enums/user.enum";
+import { generateHash } from "../../Utils/security/hash";
+import { encrypt } from "../../Utils/security/encryption";
 
 export interface IUser {
   _id: Types.ObjectId;
@@ -14,11 +16,15 @@ export interface IUser {
   password: string;
   resetPasswordOTP: string;
 
-  phone?: string;
+  phone: string;
   address?: string;
 
   gender: GenderEnum;
   role: RoleEnum;
+
+  friends?: Types.ObjectId[];
+  blockedUser?: Types.ObjectId[];
+
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -48,7 +54,10 @@ export const userSchema = new Schema<IUser>(
     confirmAt: Date,
     password: { type: String, required: true },
     resetPasswordOTP: String,
-    phone: String,
+    phone: {
+      type: String,
+      required: true,
+    },
     address: String,
     gender: {
       type: String,
@@ -60,8 +69,11 @@ export const userSchema = new Schema<IUser>(
       enum: Object.values(RoleEnum),
       default: RoleEnum.USER,
     },
+    friends: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    blockedUser: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   {
+    validateBeforeSave: true,
     timestamps: true,
     toObject: { virtuals: true },
     toJSON: {
@@ -84,6 +96,17 @@ userSchema
   .get(function (this: IUser) {
     return `${this.firstName} ${this.lastName}`;
   });
+userSchema.pre("validate", function () {
+  this.email = this.email.toLowerCase().trim();
+});
+userSchema.pre("save", async function (this: HUserDocument) {
+  if (this.isModified("password")) {
+    this.password = await generateHash(this.password);
+  }
+  if (this.isModified("phone")) {
+    this.phone = await encrypt(this.phone);
+  }
+});
 
 export const UserModel: Model<IUser> = model<IUser>("User", userSchema);
 

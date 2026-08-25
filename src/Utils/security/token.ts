@@ -104,6 +104,7 @@ export const decodedToken = async ({
               throw new UnauthorizedException("Invalid Signature");
             })(),
   });
+
   let decoded: ITokenPayload;
   try {
     decoded = verifyToken({

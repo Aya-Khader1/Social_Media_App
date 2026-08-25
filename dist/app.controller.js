@@ -29,6 +29,7 @@ const bootstrap = async () => {
     });
     app.use("/api/v1/auth", Modules_1.authController);
     app.use("/api/v1/user", Modules_1.userController);
+    app.use("/api/v1/post", Modules_1.postController);
     app.use((req, res) => {
         throw new error_response_1.NotFoundException("Route Not Found");
     });

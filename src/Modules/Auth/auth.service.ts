@@ -7,33 +7,30 @@ import {
   NotFoundException,
 } from "../../Utils/response/error.response";
 import { compareHash, generateHash } from "../../Utils/security/hash";
+import { createLoginCredentials } from "../../Utils/security/token";
 import { generateOTP } from "../../Utils/generateOTP";
 import { emailEvents } from "../../Utils/events/email.events";
-import { createLoginCredentials } from "../../Utils/security/token";
 class AuthService {
   constructor() {}
   signup = async (req: Request, res: Response): Promise<Response> => {
-    const { username, email, password }: ISignUpDTO = req.body;
+    const { username, email, password, phone }: ISignUpDTO = req.body;
     const checkUserExists = await UserModel.findOne({ email }).select("email");
     if (checkUserExists) throw new ConflictException("User already exists");
-
-    const otp = generateOTP();
+    const otp = await generateOTP();
     const [user] = await UserModel.create(
       [
         {
           username,
           email,
-          password: await generateHash(password),
+          password,
+          phone,
           confirmEmailOTP: await generateHash(otp),
         },
       ],
       { validateBeforeSave: true },
     );
-    emailEvents.emit("confirmEmail", {
-      to: email,
-      username,
-      otp,
-    });
+    emailEvents.emit("confirmEmail", { to: email, otp, username });
+
     return res.status(201).json({ message: "Done", user });
   };
   confirmEmail = async (req: Request, res: Response): Promise<Response> => {

@@ -10,7 +10,7 @@ export const authentication = ({
   tokenType = TokenTypeEnum.ACCESS,
   signatureLevel = SignatureEnum.USER,
 }: {
-  tokenType: TokenTypeEnum;
+  tokenType?: TokenTypeEnum;
   signatureLevel?: SignatureEnum;
 }) => {
   return async (req: Request, res: Response, next: NextFunction) => {
