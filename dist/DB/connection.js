@@ -9,7 +9,7 @@ const config_1 = require("./../config/config");
 const connectDB = async () => {
     try {
         const conn = await mongoose_1.default.connect(config_1.env.MONGO_URI, {
-            serverSelectionTimeoutMS: 5000,
+        //serverSelectionTimeoutMS: 5000,
         });
         console.log(`MongoDB Connected:${conn.connection.host}`);
     }

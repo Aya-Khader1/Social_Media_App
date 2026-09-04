@@ -46,6 +46,9 @@ exports.userSchema = new mongoose_1.Schema({
     },
     friends: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
     blockedUser: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
+    deviceTokens: [{ type: String }],
+    notificationEnabled: { type: Boolean, default: true },
+    lastSeen: { type: Date },
 }, {
     validateBeforeSave: true,
     timestamps: true,

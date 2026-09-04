@@ -4,6 +4,7 @@ const error_response_1 = require("../../Utils/response/error.response");
 const user_model_1 = require("../../DB/Models/user.model");
 const friendRequest_model_1 = require("../../DB/Models/friendRequest.model");
 const mongoose_1 = require("mongoose");
+const notification_event_1 = require("../../Utils/events/notification.event");
 class User {
     constructor() { }
     getProfile = async (req, res) => {
@@ -35,6 +36,11 @@ class User {
             sendBy: senderId,
             sendTo: userId,
         });
+        notification_event_1.notificationEvent.emit("friendRequest", {
+            to: target._id,
+            sendBy: senderId,
+            sendTo: friendRequest._id,
+        });
         return res
             .status(201)
             .json({ message: "Friend Request send", data: { friendRequest } });
@@ -62,12 +68,16 @@ class User {
                 $addToSet: { friends: friendRequest.sendTo },
             }),
             user_model_1.UserModel.updateOne({
-                _id: friendRequest.sendBy,
+                _id: friendRequest.sendTo,
             }, {
-                $addToSet: { friends: friendRequest.sendTo },
+                $addToSet: { friends: friendRequest.sendBy },
             }),
         ]);
         await friendRequest_model_1.FriendRequestModel.deleteOne({ _id: requestId });
+        notification_event_1.notificationEvent.emit("friendRequestAccepted", {
+            to: friendRequest.sendBy,
+            sendBy: req.user,
+        });
         return res.status(200).json({ message: "Friend Request accepted" });
     };
     rejectFriendRequest = async (req, res) => {

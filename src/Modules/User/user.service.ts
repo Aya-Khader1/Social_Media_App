@@ -9,6 +9,7 @@ import {
 import { UserModel } from "../../DB/Models/user.model";
 import { FriendRequestModel } from "../../DB/Models/friendRequest.model";
 import { Types } from "mongoose";
+import { notificationEvent } from "../../Utils/events/notification.event";
 
 class User {
   constructor() {}
@@ -52,6 +53,11 @@ class User {
       sendBy: senderId,
       sendTo: userId,
     });
+    notificationEvent.emit("friendRequest", {
+      to: target._id,
+      sendBy: senderId,
+      sendTo: friendRequest._id,
+    });
     return res
       .status(201)
       .json({ message: "Friend Request send", data: { friendRequest } });
@@ -92,14 +98,18 @@ class User {
       ),
       UserModel.updateOne(
         {
-          _id: friendRequest.sendBy,
+          _id: friendRequest.sendTo,
         },
         {
-          $addToSet: { friends: friendRequest.sendTo },
+          $addToSet: { friends: friendRequest.sendBy },
         },
       ),
     ]);
     await FriendRequestModel.deleteOne({ _id: requestId });
+    notificationEvent.emit("friendRequestAccepted", {
+      to: friendRequest.sendBy,
+      sendBy: req.user!,
+    });
     return res.status(200).json({ message: "Friend Request accepted" });
   };
 

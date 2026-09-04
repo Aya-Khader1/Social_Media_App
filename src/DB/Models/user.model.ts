@@ -24,7 +24,9 @@ export interface IUser {
 
   friends?: Types.ObjectId[];
   blockedUser?: Types.ObjectId[];
-
+  deviceTokens?: string[];
+  lastSeen: Date;
+  notificationEnabled?: boolean;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -71,6 +73,9 @@ export const userSchema = new Schema<IUser>(
     },
     friends: [{ type: Schema.Types.ObjectId, ref: "User" }],
     blockedUser: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    deviceTokens: [{ type: String }],
+    notificationEnabled: { type: Boolean, default: true },
+    lastSeen: { type: Date },
   },
   {
     validateBeforeSave: true,

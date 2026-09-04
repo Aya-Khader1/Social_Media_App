@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const error_response_1 = require("../../Utils/response/error.response");
 const post_model_1 = require("../../DB/Models/post.model");
 const comment_model_1 = require("../../DB/Models/comment.model");
+const notification_event_1 = require("../../Utils/events/notification.event");
 class PostService {
     constructor() { }
     createPost = async (req, res) => {
@@ -39,7 +40,14 @@ class PostService {
         const alreadyLiked = post.likes?.some((id) => id.equals(userId));
         const updated = await post_model_1.PostModel.findByIdAndUpdate(postId, alreadyLiked
             ? { $pull: { likes: userId } }
-            : { $addToSet: { likes: userId } }, { new: true });
+            : { $addToSet: { likes: userId } }, { returnDocument: "after" });
+        if (!alreadyLiked) {
+            notification_event_1.notificationEvent.emit("postLike", {
+                to: post.createdBy,
+                sender: req.user,
+                postId: post._id,
+            });
+        }
         return res.status(200).json({
             message: alreadyLiked ? "Post unlike" : "Post like",
             data: { updated },
@@ -78,10 +86,12 @@ class PostService {
         });
         if (!post)
             throw new error_response_1.NotFoundException("Post not found ");
+        let parnetAuthor;
         if (parentId) {
             const parent = await comment_model_1.CommentModel.findOne({ _id: parentId, postId });
             if (!parent)
                 throw new error_response_1.NotFoundException("Parent Comment not exists");
+            parnetAuthor = parent.createdBy;
         }
         const comment = await comment_model_1.CommentModel.create({
             postId,
@@ -89,6 +99,24 @@ class PostService {
             content,
             createdBy: req.user._id,
         });
+        if (parnetAuthor) {
+            notification_event_1.notificationEvent.emit("commentReply", {
+                to: parnetAuthor,
+                sender: req.user,
+                postId: post._id,
+                commentId: comment._id,
+                content,
+            });
+        }
+        else {
+            notification_event_1.notificationEvent.emit("postComment", {
+                to: post.createdBy,
+                sender: req.user,
+                postId: post._id,
+                commentId: comment._id,
+                content,
+            });
+        }
         return res
             .status(201)
             .json({ message: "Comment Created Successfully", data: { comment } });

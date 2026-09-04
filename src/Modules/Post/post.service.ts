@@ -14,6 +14,8 @@ import {
 } from "../../Utils/response/error.response";
 import { PostModel } from "../../DB/Models/post.model";
 import { CommentModel } from "../../DB/Models/comment.model";
+import { notificationEvent } from "../../Utils/events/notification.event";
+import { Types } from "mongoose";
 
 class PostService {
   constructor() {}
@@ -54,8 +56,15 @@ class PostService {
       alreadyLiked
         ? { $pull: { likes: userId } }
         : { $addToSet: { likes: userId } },
-      { new: true },
+      { returnDocument: "after" },
     );
+    if (!alreadyLiked) {
+      notificationEvent.emit("postLike", {
+        to: post.createdBy,
+        sender: req.user!,
+        postId: post._id,
+      });
+    }
 
     return res.status(200).json({
       message: alreadyLiked ? "Post unlike" : "Post like",
@@ -101,9 +110,11 @@ class PostService {
       freezedAt: { $exists: false },
     });
     if (!post) throw new NotFoundException("Post not found ");
+    let parnetAuthor: Types.ObjectId | undefined;
     if (parentId) {
       const parent = await CommentModel.findOne({ _id: parentId, postId });
       if (!parent) throw new NotFoundException("Parent Comment not exists");
+      parnetAuthor = parent.createdBy;
     }
     const comment = await CommentModel.create({
       postId,
@@ -111,6 +122,23 @@ class PostService {
       content,
       createdBy: req.user!._id,
     });
+    if (parnetAuthor) {
+      notificationEvent.emit("commentReply", {
+        to: parnetAuthor,
+        sender: req.user!,
+        postId: post._id,
+        commentId: comment._id,
+        content,
+      });
+    } else {
+      notificationEvent.emit("postComment", {
+        to: post.createdBy,
+        sender: req.user!,
+        postId: post._id,
+        commentId: comment._id,
+        content,
+      });
+    }
     return res
       .status(201)
       .json({ message: "Comment Created Successfully", data: { comment } });

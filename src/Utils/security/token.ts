@@ -119,7 +119,10 @@ export const decodedToken = async ({
   }
 
   if (!decoded._id) throw new UnauthorizedException("Invalid token payload");
-  const user = await UserModel.findById(decoded._id);
+  const user = await UserModel.findById(decoded._id).populate(
+    "friends",
+    "firstName lastName email",
+  );
   if (!user) throw new BadRequestException("Account not find");
   return { user, decoded };
 };

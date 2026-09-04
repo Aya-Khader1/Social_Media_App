@@ -80,7 +80,7 @@ const decodedToken = async ({ authorization, tokenType = user_enum_1.TokenTypeEn
     }
     if (!decoded._id)
         throw new error_response_1.UnauthorizedException("Invalid token payload");
-    const user = await user_model_1.UserModel.findById(decoded._id);
+    const user = await user_model_1.UserModel.findById(decoded._id).populate("friends", "firstName lastName email");
     if (!user)
         throw new error_response_1.BadRequestException("Account not find");
     return { user, decoded };
